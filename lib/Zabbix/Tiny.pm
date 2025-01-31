@@ -119,7 +119,7 @@ sub login {
         method  => 'user.login',
     };
 
-    if ( $self->version lt "6.0" ) {
+    if ( $self->version lt ::version->parse("v6.0") ) {
         $json_data->{params} = {
             user     => $self->user,
             password => $self->password,
@@ -147,6 +147,9 @@ sub login {
     }
 
     $self->{auth} = $content->{'result'};
+    if ( $self->version ge ::version->parse("v6.4") ) {
+        $ua->default_header( Authorization => 'Bearer '.$self->{auth} );
+    }
 }
 
 
@@ -189,8 +192,10 @@ sub prepare {
         method  => $self->zabbix_method,
         params  => $self->zabbix_params,
     };
-    unless ($self->{zabbix_method} eq 'apiinfo.version') {
-        $self->{request}->{auth} = $self->auth;
+    unless ( $self->{zabbix_method} eq 'apiinfo.version' ) {
+        if ( $self->version lt ::version->parse("v6.4") ) {
+            $self->{request}->{auth} = $self->auth;
+        }
     }
     $self->{json_prepared} = encode_json( $self->request ) or die($!);
 }
@@ -226,6 +231,7 @@ sub do {
         {
             $self->{redo}++;
             delete( $self->{auth} );
+            $self->{ua}->default_headers->remove_header('Authorization');
             prepare($self);
             &do($self);    ## Need to use "&" because "do" is a perl keyword.
         }
