@@ -148,7 +148,6 @@ sub login {
 
     $self->{auth} = $content->{'result'};
     if ( $self->version ge ::version->parse("v6.4") ) {
-      print STDERR "setting header.\r\n";
         $ua->default_header( Authorization => 'Bearer '.$self->{auth} );
     }
 }
